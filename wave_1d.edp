@@ -1,0 +1,35 @@
+// 境界の定義 (単位円), いわゆる正の向き
+//border Gamma(t=0,2*pi) { x=cos(t); y=sin(t); } 
+
+// 三角形要素分割を生成 (境界を 50 に分割)
+//mesh Th = buildmesh(Gamma(50)); 
+mesh Th = square(100,100); 
+plot(Th,wait=true);
+
+// 有限要素空間は P1 (区分的1次多項式) 要素
+fespace Vh(Th,P1);
+Vh u,v;
+
+// Poisson 方程式 -△ u=f の右辺
+//func f = 0;
+
+// 現在時刻をメモ
+real start = clock();
+
+// differential equation
+solve wave(u,v)
+   = int2d(Th)(-dx(v)*dx(u) +dy(v)*dy(u)) 
+     +on(1, u = sin(x*2*pi/1))
+     +on(2,4, u = 0);
+
+// 可視化 (等高線)
+real [int] levels =-0.012:0.001:0.012;
+plot(u,wait=true); 
+//plot(u,viso=levels,fill=true,wait=true);
+
+// 可視化 (3 次元) --- マウスで使って動かせる
+plot(u,dim=3,wait=true); 
+//plot(u,dim=3,viso=levels,fill=true,wait=true);
+
+// 計算時間を表示
+cout << " CPU time= " << clock() - start << endl;

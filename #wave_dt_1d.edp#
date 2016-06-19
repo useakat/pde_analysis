@@ -1,0 +1,66 @@
+// ’¶­’³¦’¤Î’Äê’µÁ (’Ã±’°Ì’±ß), ’¤¤’¤ï’¤æ’¤ë’Àµ’¤Î’¸þ’¤­
+//border Gamma(t=0,2*pi) { x=cos(t); y=sin(t); } 
+
+// ’»°’³Ñ’·Á’Í×’ÁÇ’Ê¬’³ä’¤ò’À¸’À® (’¶­’³¦’¤ò 50 ’¤Ë’Ê¬’³ä)
+//mesh Th = buildmesh(Gamma(50)); 
+mesh Th = square(100,10,[-10+20*x,0+0.01*y]); 
+//plot(Th,wait=true);
+
+// ’Í­’¸Â’Í×’ÁÇ’¶õ’´Ö’¤Ï P1 (’¶è’Ê¬’Åª1’¼¡’Â¿’¹à’¼°) ’Í×’ÁÇ
+fespace Vh(Th,P1);
+Vh u,v,uo,uoo;
+
+// Poisson ’Êý’Äø’¼° -œò¡ó u=f ’¤Î’±¦’ÊÕ
+func f = sin(u);
+
+real dt = 0.001;
+int nn = 0;
+
+//func initf = sin(x*2*pi);
+//func initf = exp(-(x-0.75)^2/0.01);
+func initf = 4*atan(exp(x));
+
+uoo = initf;
+uo = initf;
+
+// differential equation     
+problem wave(u,v)	     
+   = int2d(Th)(v*u +dt^2*dx(v)*dx(u)*0.5) 
+     +int2d(Th)(dt^2*dx(v)*dx(uoo)*0.5) 
+     +int2d(Th)(-2*v*uo +v*uoo +v*sin(uo))
+     +on(4, u = 0)
+     +on(2, u = pi);
+
+// ’¸½’ºß’»þ’¹ï’¤ò’¥á’¥â
+real start = clock();
+
+for (real t=dt; t<=2; t+=dt) {
+    nn = nn +1;
+    wave; // solve the differential equation
+//   plot(u,cmm="t = "+t, ps="data/heat"+t+".eps",bw=1);
+   {
+      ofstream ug("data/wave"+nn+".dat");
+//      for (int i=0; i<Th.nt; i = i+2) {
+      for (int i=0; i<200; i = i+2) {
+//       for (int j=0; j<3; j++) {
+//         ug << Th[i][j].x << " " << Th[i][j].y << " " << u[][Vh(i,j)]<<endl;
+//       }
+       ug << Th[i][0].x << " " << u[][Vh(i,0)]<<"\n";
+      }
+   }
+
+   uoo = uo;
+   uo = u;
+}
+
+// ’²Ä’»ë’²½ (’Åù’¹â’Àþ)
+//real [int] levels =-0.012:0.001:0.012;
+//plot(u,wait=true); 
+//plot(u,viso=levels,fill=true,wait=true);
+
+// ’²Ä’»ë’²½ (3 ’¼¡’¸µ) --- ’¥Þ’¥¦’¥¹’¤Æœò¾ù’»È’¤Ã’¤Æ’Æ°’¤«’¤»’¤ë
+//plot(u,dim=3,wait=true); 
+//plot(u,dim=3,viso=levels,fill=true,wait=true);
+
+// ’·×’»»’»þ’´Ö’¤ò’É½’¼¨
+cout << " CPU time= " << clock() - start << endl;
