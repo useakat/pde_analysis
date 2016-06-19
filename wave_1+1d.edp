@@ -1,0 +1,63 @@
+// 境界の定義 (単位円), いわゆる正の向き
+//border Gamma(t=0,2*pi) { x=cos(t); y=sin(t); } 
+
+real xmin = -100.;
+real xmax = 100.;
+real ymin = 0.;
+real ymax = 100.;
+
+int xdiv = 1000;
+int ydiv = 1000;
+
+// 三角形要素分割を生成 (境界を 50 に分割)
+//mesh Th = buildmesh(Gamma(50)); 
+mesh Th = square(xdiv,ydiv,[xmin+(xmax -xmin)*x,ymin +(ymax -ymin)*y]); // y is time direction
+//plot(Th,wait=true);
+
+// 有限要素空間は P1 (区分的1次多項式) 要素
+fespace Vh(Th,P1);
+Vh u,v;
+
+// Poisson 方程式 -△ u=f の右辺
+//func f = 0.;
+func f = sin(u);
+//func f = cos(4*atan(exp(x)))*u;
+
+//func initf = sin(x*2*pi/(2*xmax));
+func initf = 4*atan(exp(x));
+
+real b1 = 4*atan(exp(xmin));
+real b2 = 4*atan(exp(xmax));
+//real b1 = 0.0;
+//real b2 = 2*pi;
+
+// define differential equation in the weak form     
+solve wave(u,v)
+   = int2d(Th)(-dy(v)*dy(u) +dx(v)*dx(u))
+     +int2d(Th)(v*f)
+     +on(4, u = b1)
+     +on(2, u = b2)
+     +on(1, u = initf);
+
+// 現在時刻をメモ
+real start = clock();
+
+for (int nn=0; nn<ydiv; nn+=1) {
+    {
+        ofstream ug("data/wave"+nn+".dat");
+        for (int i=nn*2*xdiv +1; i<(nn+1)*2*xdiv; i = i+2) {
+           ug << Th[i][0].x << " " << u[][Vh(i,0)]<<"\n";
+        }
+    }
+}
+
+// 可視化 (等高線)
+//real [int] levels =-0.012:0.001:0.012;
+//plot(u,wait=true); 
+//plot(u,viso=levels,fill=true,wait=true);
+
+// 可視化 (3 次元) --- マウスで使って動かせる
+//plot(u,dim=3,wait=true); 
+
+// 計算時間を表示
+cout << " CPU time= " << clock() - start << endl;
