@@ -1,0 +1,122 @@
+//
+// Technical data to recreate OX and OY axis
+//
+border OX(t=0,1){x=t;y=0;} 
+border OY(t=-1,1){x=0;y=t;}
+
+int m=1000; // grid points on x-interval [0,1]
+real h=1./m;
+
+//Just one line of triangles
+mesh Th=square(m,1,[-10+20*x,y]);
+
+plot(Th, cmm="NO ADAPTED MESH ",wait=0);//,ps="reactiondiffusionnoadapted2dmesh.eps");
+fespace Vh(Th,P2);
+ 
+Vh u,v,uold0,uold1,unew;
+
+//
+// macro to get dofs on x-intetrval [0,1]
+//
+macro boundarydofs(lab,flab,Th,Xh,zoi,ndofonlab) 
+{int[int] ib(0:Xh.ndof-1); 
+varf vbord(u1,v1) = on(lab,u1=flab);
+real[int] xb=vbord(0,Xh,tgv=1);
+sort(xb,ib); 
+zoi=ib;
+xb = xb ? 1 : 0;
+ndofonlab = xb.sum;  
+}//
+int mm1=u[].n;
+cout<<"Total number of dofs initial mesh "<<mm1<<endl;
+int[int] zoi(mm1);
+int ndofon1=0;
+boundarydofs(1,x-1000,Th,Vh,zoi,ndofon1) 
+//
+// zoi keeps dofs on x-interval [0,1]
+//
+zoi.resize(ndofon1);
+real dt=0.01;
+
+//int M=10;
+//real T=dt*M,alpha=1./dt;
+
+real T=10; // tempo di uscita
+real t=0;  // velocita iniziale
+//real c=1400; // Speed of propagation
+//real L=1000; // Speed of propagation
+
+//func initf = sin(x*2*pi/2.);
+//func initf = exp(-(x-0.75)^2/0.01);
+//func initf = 4*atan(exp(x));
+func initf = 0.001*(-x^2 +100);
+//func initf = 0.1;
+//func initf = 0.0;
+
+uold0 = initf;
+uold1 = uold0;
+
+// Poisson 方程式 -△ u=f の右辺
+//func f = 0;
+//func f = sin(uold1);
+func f = cos(4*atan(exp(x)))*uold1;
+
+real ratio = 0.5*dt^2;
+//real ratio = dt^2;
+varf mat(u,v)= int1d(Th,1)(u*v +ratio*dx(u)*dx(v)) +on(4,u=0) +on(2,u=0); 
+varf rhs(u,v)= int1d(Th,1)((2*uold1-uold0)*v
+                          -ratio*dx(uold0)*dx(v) +dt^2*f*v) +on(4,u=0) +on(2,u=0);
+//varf mat(u,v)= int1d(Th,1)(u*v) +on(4,u=4*atan(exp(-10.))) +on(2,u=4*atan(exp(10.))); 
+//varf rhs(u,v)= int1d(Th,1)((2*uold1-uold0)*v
+//                          -ratio*dx(uold1)*dx(v) +dt^2*f*v) +on(4,u=4*atan(exp(-10.))) +on(2,u=4*atan(exp(10.)));
+
+      
+matrix A,MM;
+
+A=mat(Vh,Vh,tgv=1e30);
+real[int] l=rhs(0,Vh,tgv=1e30);
+
+real[int]  rhs1d(ndofon1),pu1d(ndofon1);
+for (int i=0;i<ndofon1;i++)
+{
+	rhs1d(i)=l(zoi[i]);
+};
+MM=A(zoi,zoi);
+set(MM,solver=UMFPACK);
+
+real[int] pt(ndofon1),putrue(ndofon1);
+
+Vh xTh=x;
+for (int i=0;i<ndofon1;i++)
+{
+	pt[i]=xTh[](zoi[i]);
+}
+
+real maximum=0.0;
+
+for (t=0;t<T; t+=dt)
+{ // time loop
+
+pu1d=MM^-1*rhs1d;
+
+plot([pt,pu1d],OX(1),OY(1),wait=0,cmm="Time "+t+" max "+pu1d.linfty);
+cout<<" Time "+t+" max value ...."+pu1d.linfty<<endl;
+
+maximum=max(maximum,pu1d.linfty);
+//
+//update
+//
+for (int i=0;i<ndofon1;i++)
+{
+	
+	uold0[][zoi[i]]=uold1[][zoi[i]];
+    uold1[][zoi[i]]=pu1d(i);
+};
+
+l=rhs(0,Vh,tgv=1e30);
+   for (int i=0;i<ndofon1;i++)
+     {
+	rhs1d(i)=l(zoi[i]);
+     };
+}; // end of time loop
+cout<<" Time "+t+" max value ...."+pu1d.linfty<<endl;
