@@ -1,8 +1,8 @@
 // 境界の定義 (単位円), いわゆる正の向き
 //border Gamma(t=0,2*pi) { x=cos(t); y=sin(t); } 
 
-real xmin = -100.;
-real xmax = 100.;
+real xmin = -10.;
+real xmax = 10.;
 real ymin = 0.;
 real ymax = 100.;
 
@@ -20,16 +20,18 @@ Vh u,v;
 
 // Poisson 方程式 -△ u=f の右辺
 //func f = 0.;
-func f = sin(u);
-//func f = cos(4*atan(exp(x)))*u;
+//func f = sin(u);
+func f = cos(4*atan(exp(x)))*u;
 
-//func initf = sin(x*2*pi/(2*xmax));
-func initf = 4*atan(exp(x));
+//func initf = 0.1*sin(x*2*pi/(2*xmax));
+func initf = 0.001*(-x^2 +xmax^2);
+//func initf = 4*atan(exp(x));
+//func initf = 0;
 
-real b1 = 4*atan(exp(xmin));
-real b2 = 4*atan(exp(xmax));
-//real b1 = 0.0;
-//real b2 = 2*pi;
+//real b1 = 4*atan(exp(xmin));
+//real b2 = 4*atan(exp(xmax));
+real b1 = 0.0;
+real b2 = 0.0;
 
 // define differential equation in the weak form     
 solve wave(u,v)
