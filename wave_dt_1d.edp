@@ -3,19 +3,12 @@
 
 // 三角形要素分割を生成 (境界を 50 に分割)
 //mesh Th = buildmesh(Gamma(50)); 
-mesh Th = square(100,10,[-10+20*x,0+0.01*y]); 
+mesh Th = square(100,2,[-10+20*x,0+0.01*y]); 
 //plot(Th,wait=true);
 
 // 有限要素空間は P1 (区分的1次多項式) 要素
 fespace Vh(Th,P1);
 Vh u,v,uo,uoo;
-
-// Poisson 方程式 -△ u=f の右辺
-func f = sin(uo);
-//func f = cos(4*atan(exp(x)))*uo;
-
-real dt = 0.01;
-int nn = 0;
 
 //func initf = 0.1*sin(x*2*pi/20.);
 //func initf = exp(-(x-0.75)^2/0.01);
@@ -29,23 +22,31 @@ uo = initf;
 //uoo = 0.1*(2.0*randreal1() -1);
 //uo = uoo;
 
+// Poisson 方程式 -△ u=f の右辺
+//func f = 0;
+func f = sin(uo);
+//func f = cos(4*atan(exp(x)))*uo;
+
+real dt = 0.01;
+int nn = 0;
+
 real b1 = 4*atan(exp(-10.));
 real b2 = 4*atan(exp(10.));
 //real b1 = 0.0;
-//real b2 = 2*pi;
+//real b2 = 0.0;
 
 // differential equation     
 problem wave(u,v)	     
    = int2d(Th)(v*u +dt^2*dx(v)*dx(u)*0.5) 
      +int2d(Th)(dt^2*dx(v)*dx(uoo)*0.5) 
-     +int2d(Th)(-2*v*uo +v*uoo -dt^2*v*f)
+     +int2d(Th)(-2*v*uo +v*uoo +dt^2*v*f)
      +on(4, u = b1)
      +on(2, u = b2);
 
 // 現在時刻をメモ
 real start = clock();
 
-for (real t=dt; t<=40; t+=dt) {
+for (real t=dt; t<=400; t+=dt) {
     nn = nn +1;
     wave; // solve the differential equation
 //   plot(u,cmm="t = "+t, ps="data/heat"+t+".eps",bw=1);
